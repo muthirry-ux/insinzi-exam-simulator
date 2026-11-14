@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intsinzi Exam Simulator</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f4f7fb;--card:#fff;--tx:#14213d;--mu:#5b6b84;--pr:#1d4ed8;--pr2:#e8eefc;--ok:#15803d;--bad:#b91c1c;--bd:#d9e1ee;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f172a;--card:#1e293b;--tx:#f1f5f9;--mu:#9fb0c8;--pr:#60a5fa;--pr2:#1e3a5f;--ok:#4ade80;--bad:#f87171;--bd:#334155;color-scheme:dark}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--bd);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.logo{font-weight:800;font-size:20px;color:var(--pr)}.logo small{display:block;font-weight:500;font-size:12px;color:var(--mu)}
+main{max-width:820px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:14px}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:20px;margin:0 0 10px}
+p{margin:6px 0}.mu{color:var(--mu)}
+label{display:block;font-weight:600;margin:12px 0 4px}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+button{background:var(--pr);color:#fff;border:0;border-radius:10px;padding:11px 18px;font:inherit;font-weight:600;cursor:pointer}
+button.alt{background:var(--pr2);color:var(--pr)}button.sm{padding:6px 12px;font-size:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:140px}
+.pills{display:flex;gap:6px;flex-wrap:wrap}.pill{background:var(--pr2);color:var(--pr);border-radius:99px;padding:3px 12px;font-size:13px;font-weight:600}
+.opt{display:block;border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin:8px 0;cursor:pointer}
+.opt.sel{border-color:var(--pr);background:var(--pr2)}.opt input{width:auto;margin-right:8px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.timer{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}.timer.low{color:var(--bad)}
+.score{font-size:48px;font-weight:800;color:var(--pr)}
+.meter{height:10px;background:var(--bd);border-radius:9px;overflow:hidden}.meter i{display:block;height:100%}
+.good{color:var(--ok)}.bad{color:var(--bad)}
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.nav b{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--bd);border-radius:8px;cursor:pointer;font-size:14px}
+.nav b.done{background:var(--pr);color:#fff;border-color:var(--pr)}.nav b.cur{outline:2px solid var(--pr)}
+.hide{display:none}
+@media print{header,.bar,.noprint{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Intsinzi Exam Simulator<small>Practise today, succeed on exam day</small></div>
+  <div class="row noprint" style="flex:0 0 auto"><button class="alt sm" onclick="show('home')">Home</button><button class="alt sm" onclick="show('admin')">Teacher / Admin</button></div>
+</header>
+<main>
+
+<section id="home">
+  <div class="card">
+    <h1>Welcome, future achiever 🏆</h1>
+    <p class="mu">Intsinzi is a friendly platform where learners practise real exam conditions, get their marks instantly, and learn exactly what to revise next. Schools and teachers can upload their own learning materials to make every practice exam fit their curriculum.</p>
+    <div class="pills"><span class="pill">⏱ 100 minutes for every subject</span><span class="pill">📊 Instant marks</span><span class="pill">🎯 Personal recommendations</span></div>
+  </div>
+  <div class="card">
+    <h2>Start a practice exam</h2>
+    <label for="name">Your name</label><input id="name" placeholder="e.g. Aline">
+    <div class="row">
+      <div><label for="level">Level</label><select id="level"></select></div>
+      <div><label for="subject">Subject</label><select id="subject"></select></div>
+    </div>
+    <p class="mu" id="avail"></p>
+    <p><button onclick="start()">Start exam (100 minutes)</button></p>
+  </div>
+</section>
+
+<section id="exam" class="hide">
+  <div class="bar"><div><b id="eTitle"></b><div class="mu" id="eProg"></div></div><div class="timer" id="timer">100:00</div></div>
+  <div class="card" id="qbox"></div>
+  <div class="nav" id="nav"></div>
+  <div class="row"><button class="alt" onclick="go(-1)">← Previous</button><button class="alt" onclick="go(1)">Next →</button><button onclick="submit(false)">Submit answers</button></div>
+</section>
+
+<section id="result" class="hide"></section>
+
+<section id="admin" class="hide">
+  <div class="card">
+    <h2>Teacher / Admin: customise your exams</h2>
+    <p class="mu">Upload your own questions, or upload learning material (text) and the system will create practice questions from it. Everything is saved on this device.</p>
+    <label for="upq">1. Upload question bank (.csv or .json)</label>
+    <input type="file" id="upq" accept=".csv,.json,.txt">
+    <p class="mu" style="font-size:14px">CSV columns: subject, level, topic, question, A, B, C, D, answer (A–D), explanation. Use level ALL for every level.</p>
+    <p><button class="alt sm" onclick="sample()">Download sample CSV</button></p>
+  </div>
+  <div class="card">
+    <label for="upm">2. Upload learning material (.txt) to auto-generate questions</label>
+    <div class="row">
+      <div><label for="msub">Subject</label><select id="msub"></select></div>
+      <div><label for="mlvl">Level</label><select id="mlvl"></select></div>
+    </div>
+    <label for="mtopic">Topic / unit title</label><input id="mtopic" placeholder="e.g. Unit 3: Water cycle">
+    <label for="upm">Material file</label><input type="file" id="upm" accept=".txt,.md">
+    <label for="mtext">…or paste text here</label><textarea id="mtext" rows="5"></textarea>
+    <p><button onclick="gen()">Generate questions</button></p>
+    <p id="amsg" class="good"></p>
+  </div>
+  <div class="card"><h2>Question bank</h2><p id="stats" class="mu"></p><button class="alt sm" onclick="resetBank()">Remove my uploaded questions</button></div>
+</section>
+</main>
+
+<script>
+var SUBJECTS=["Creative Arts","English","French","Kinyarwanda","Mathematics","SET (Science & Elementary Technology)","SST (Social Studies)"];
+var LEVELS=["P1","P2","P3","P4","P5","P6"];
+var TOTAL=100*60;
+var S=[ // built-in sample questions: [subject index, topic, question, [A,B,C,D], answer idx, explanation]
+[4,"Fractions","What is 3/4 + 1/4?",["1","1/2","4/8","3/16"],0,"Same denominators: add numerators, 4/4 = 1."],
+[4,"Fractions","Which fraction is the largest?",["1/2","3/4","1/3","1/4"],1,"3/4 is greater than the others."],
+[4,"Measurement","How many centimetres are in 2 metres?",["20","200","2000","2"],1,"1 m = 100 cm, so 2 m = 200 cm."],
+[4,"Number operations","What is 48 ÷ 6?",["6","7","8","9"],2,"6 × 8 = 48."],
+[1,"Grammar","Choose the correct word: She ___ to school every day.",["go","goes","going","gone"],1,"Third person singular takes ‘goes’."],
+[1,"Vocabulary","The opposite of ‘ancient’ is…",["old","modern","large","slow"],1,"Ancient means very old; modern is its opposite."],
+[1,"Grammar","Yesterday, we ___ football.",["play","plays","played","playing"],2,"Past simple: played."],
+[2,"Vocabulaire","Comment dit-on ‘book’ en français ?",["Cahier","Livre","Stylo","Table"],1,"‘Livre’ means book."],
+[2,"Grammaire","Complétez : Je ___ élève.",["suis","es","est","sommes"],0,"‘Je suis’ is the correct form of être."],
+[3,"Ikibonezamvugo","Ijambo ‘umwana’ riri mu cyiciro cy’amazina y’…",["Abantu","Ibintu","Inyamaswa","Ibimera"],0,"Umwana ni umuntu."],
+[3,"Amagambo","Ikinyuranyo cya ‘gukuru’ ni…",["gito","hejuru","kure","nini"],0,"Gukuru ↔ gito."],
+[5,"Living things","Which part of a plant absorbs water from the soil?",["Leaf","Stem","Root","Flower"],2,"Roots absorb water and minerals."],
+[5,"Technology","Which of these is a source of light?",["Moon","Sun","Mirror","Stone"],1,"The sun produces its own light."],
+[5,"Health","Which food helps the body to grow?",["Sweets","Beans","Soda","Chewing gum"],1,"Beans are rich in proteins."],
+[6,"Our country","What is the capital city of Rwanda?",["Huye","Musanze","Kigali","Rubavu"],2,"Kigali is the capital."],
+[6,"Our country","How many provinces does Rwanda have?",["3","5","7","9"],1,"Rwanda has 4 provinces and the City of Kigali, making 5."],
+[6,"Citizenship","Who should help to keep our school clean?",["Only teachers","Only cleaners","Every learner","Nobody"],2,"Everyone shares responsibility."],
+[0,"Colours","Mixing blue and yellow makes…",["Green","Orange","Purple","Brown"],0,"Blue + yellow = green."],
+[0,"Art forms","Which is a traditional Rwandan art?",["Imigongo","Graffiti only","Pop video","3D printing"],0,"Imigongo is a traditional cow-dung art."]
+];
+var bank=[],custom=[],ex=null,tick=null;
+function $(i){return document.getElementById(i)}
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function load(){try{custom=JSON.parse(localStorage.getItem("ins_custom")||"[]")}catch(e){custom=[]}
+ bank=S.map(function(r){return{subject:SUBJECTS[r[0]],level:"ALL",topic:r[1],q:r[2],o:r[3],a:r[4],e:r[5]}}).concat(custom)}
+function save(){try{localStorage.setItem("ins_custom",JSON.stringify(custom))}catch(e){}}
+function fill(id,arr){$(id).innerHTML=arr.map(function(x){return"<option>"+esc(x)+"</option>"}).join("")}
+function show(id){["home","exam","result","admin"].forEach(function(s){$(s).classList.toggle("hide",s!==id)});if(id==="admin")stats();if(id==="home")avail();scrollTo(0,0)}
+function pool(sub,lvl){return bank.filter(function(b){return b.subject===sub&&(b.level==="ALL"||b.level===lvl)})}
+function avail(){var n=pool($("subject").value,$("level").value).length;$("avail").textContent=n?n+" questions available for this exam.":"No questions yet for this choice. Ask your teacher to upload materials."}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function start(){var sub=$("subject").value,lvl=$("level").value,p=pool(sub,lvl);
+ if(!p.length){avail();return}
+ ex={name:$("name").value.trim()||"Learner",sub:sub,lvl:lvl,qs:shuffle(p).slice(0,40),ans:{},i:0,left:TOTAL,done:false};
+ $("eTitle").textContent=lvl+" · "+sub;show("exam");draw();clearInterval(tick);
+ tick=setInterval(function(){ex.left--;clock();if(ex.left<=0)submit(true)},1000);clock()}
+function clock(){var m=Math.floor(ex.left/60),s=ex.left%60;var t=$("timer");t.textContent=(m<10?"0":"")+m+":"+(s<10?"0":"")+s;t.classList.toggle("low",ex.left<600)}
+function draw(){var q=ex.qs[ex.i];
+ $("eProg").textContent="Question "+(ex.i+1)+" of "+ex.qs.length;
+ $("qbox").innerHTML="<p class='mu'>"+esc(q.topic)+"</p><h2>"+esc(q.q)+"</h2>"+q.o.map(function(o,k){
+  return"<label class='opt"+(ex.ans[ex.i]===k?" sel":"")+"'><input type='radio' name='o' "+(ex.ans[ex.i]===k?"checked":"")+" onchange='pick("+k+")'>"+"ABCD"[k]+". "+esc(o)+"</label>"}).join("");
+ $("nav").innerHTML=ex.qs.map(function(_,k){return"<b class='"+(ex.ans[k]!==undefined?"done ":"")+(k===ex.i?"cur":"")+"' onclick='jump("+k+")'>"+(k+1)+"</b>"}).join("")}
+function pick(k){ex.ans[ex.i]=k;draw()}
+function jump(k){ex.i=k;draw()}
+function go(d){ex.i=Math.max(0,Math.min(ex.qs.length-1,ex.i+d));draw()}
+function submit(auto){
+ var un=ex.qs.length-Object.keys(ex.ans).length;
+ if(!auto&&un>0&&!confirm("You have "+un+" unanswered question(s). Submit anyway?"))return;
+ clearInterval(tick);var topics={},score=0,wrong=[];
+ ex.qs.forEach(function(q,k){var t=topics[q.topic]=topics[q.topic]||{c:0,n:0};t.n++;
+  if(ex.ans[k]===q.a){t.c++;score++}else wrong.push({q:q,k:k})});
+ var n=ex.qs.length,pc=Math.round(score*100/n),used=TOTAL-ex.left;
+ var g=pc>=80?["Excellent","var(--ok)"]:pc>=60?["Good","var(--pr)"]:pc>=40?["Fair","#d97706"]:["Needs more support","var(--bad)"];
+ var rows="",recs=[];
+ Object.keys(topics).forEach(function(k){var t=topics[k],p=Math.round(t.c*100/t.n);
+  var col=p>=70?"var(--ok)":p>=50?"#d97706":"var(--bad)";
+  rows+="<p><b>"+esc(k)+"</b> — "+t.c+"/"+t.n+" ("+p+"%)</p><div class='meter'><i style='width:"+p+"%;background:"+col+"'></i></div>";
+  if(p<50)recs.push("<li><b>"+esc(k)+"</b> needs priority attention. Re-read this unit in your "+ex.lvl+" "+esc(ex.sub)+" Pupil’s Book, redo the examples, then ask your teacher for extra exercises.</li>");
+  else if(p<70)recs.push("<li><b>"+esc(k)+"</b> is improving. Practise 5 more questions on it and review your mistakes.</li>")});
+ if(!recs.length)recs.push("<li>Great work! Keep your skills sharp by trying a different subject or a longer question set.</li>");
+ if(un>0)recs.push("<li>You left "+un+" question(s) unanswered. Practise time management: aim for about "+Math.floor(100/n*10)/10+" minutes per question.</li>");
+ var rev=wrong.map(function(w){return"<div class='card'><p class='mu'>Question "+(w.k+1)+" · "+esc(w.q.topic)+"</p><p><b>"+esc(w.q.q)+"</b></p>"+
+  "<p class='bad'>Your answer: "+(ex.ans[w.k]===undefined?"Not answered":"ABCD"[ex.ans[w.k]]+". "+esc(w.q.o[ex.ans[w.k]]))+"</p>"+
+  "<p class='good'>Correct answer: "+"ABCD"[w.q.a]+". "+esc(w.q.o[w.q.a])+"</p>"+(w.q.e?"<p class='mu'>Why: "+esc(w.q.e)+"</p>":"")+"</div>"}).join("");
+ $("result").innerHTML="<div class='card' style='text-align:center'><p class='mu'>"+esc(ex.name)+" · "+ex.lvl+" · "+esc(ex.sub)+"</p><div class='score'>"+score+" / "+n+"</div>"+
+  "<h2 style='color:"+g[1]+"'>"+pc+"% · "+g[0]+"</h2><p class='mu'>Time used: "+Math.floor(used/60)+" min "+used%60+" s of 100 min"+(auto?" (time was up, answers submitted automatically)":"")+"</p></div>"+
+  "<div class='card'><h2>Performance by topic</h2>"+rows+"</div>"+
+  "<div class='card'><h2>🎯 Recommendations for improvement</h2><ul>"+recs.join("")+"</ul></div>"+
+  (wrong.length?"<h2>Review your mistakes</h2>"+rev:"")+
+  "<div class='row noprint'><button onclick='window.print()'>Print / save report</button><button class='alt' onclick='show(\"home\")'>Try another exam</button></div>";
+ show("result")}
+
+/* ---------- Admin: uploads ---------- */
+function parseCSV(t){var r=[],row=[],c="",q=false;for(var i=0;i<t.length;i++){var ch=t[i];
+ if(q){if(ch=='"'&&t[i+1]=='"'){c+='"';i++}else if(ch=='"')q=false;else c+=ch}
+ else if(ch=='"')q=true;else if(ch==","){row.push(c);c=""}
+ else if(ch=="\n"||ch=="\r"){if(ch=="\r"&&t[i+1]=="\n")i++;row.push(c);c="";if(row.join("").trim())r.push(row);row=[]}else c+=ch}
+ row.push(c);if(row.join("").trim())r.push(row);return r}
+function norm(o){var a=String(o.answer||o.a||"A").trim().toUpperCase().charCodeAt(0)-65;
+ return{subject:String(o.subject||"").trim(),level:String(o.level||"ALL").trim().toUpperCase(),topic:String(o.topic||"General").trim(),q:String(o.question||o.q||"").trim(),
+ o:[o.A,o.B,o.C,o.D].map(function(x){return String(x==null?"":x)}),a:a,e:String(o.explanation||o.e||"")}}
+$("upq").onchange=function(ev){var f=ev.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){var items=[];
+ try{if(/\.json$/i.test(f.name)){var j=JSON.parse(rd.result);items=j.map(function(x){var y=norm(x);if(x.options)y.o=x.options;return y})}
+ else{var rows=parseCSV(rd.result),h=rows.shift().map(function(x){return x.trim().toLowerCase()===x.trim()?x.trim():x.trim()});
+  items=rows.map(function(r){var o={};h.forEach(function(k,i){o[k.toLowerCase()==="a"||k.toLowerCase()==="b"||k.toLowerCase()==="c"||k.toLowerCase()==="d"?k.toUpperCase():k.toLowerCase()]=r[i]});return norm(o)})}
+ }catch(e){$("amsg").textContent="Could not read that file. Please check the format.";return}
+ items=items.filter(function(x){return x.q&&x.subject&&x.a>=0&&x.a<4&&x.o[x.a]});
+ custom=custom.concat(items);save();load();stats();$("amsg").textContent="Added "+items.length+" questions."};rd.readAsText(f)};
+$("upm").onchange=function(ev){var f=ev.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){$("mtext").value=rd.result};rd.readAsText(f)};
+function gen(){var t=$("mtext").value.replace(/\s+/g," ").trim();if(t.length<80){$("amsg").textContent="Please add more text (at least a few sentences).";return}
+ var ss=t.match(/[^.!?]+[.!?]/g)||[],keys=[],items=[];
+ ss=ss.map(function(s){return s.trim()}).filter(function(s){var w=s.split(" ").length;return w>=7&&w<=30});
+ ss.forEach(function(s){var w=s.replace(/[^A-Za-z0-9À-ÿ' ]/g,"").split(" ").filter(function(x){return x.length>=6||/^\d+$/.test(x)});
+  var k=w.sort(function(a,b){return b.length-a.length})[0];keys.push(k||null)});
+ var all=keys.filter(Boolean);
+ ss.forEach(function(s,i){var k=keys[i];if(!k)return;
+  var d=shuffle(all.filter(function(x){return x.toLowerCase()!==k.toLowerCase()}).filter(function(v,j,a){return a.indexOf(v)===j})).slice(0,3);
+  if(d.length<3)return;var o=shuffle(d.concat([k]));
+  items.push({subject:$("msub").value,level:$("mlvl").value,topic:$("mtopic").value||"Uploaded material",q:"Fill in the missing word: "+s.replace(new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")),"_____"),o:o,a:o.indexOf(k),e:"From the material: “"+s+"”"})});
+ if(!items.length){$("amsg").textContent="Not enough suitable sentences found. Try a longer text.";return}
+ custom=custom.concat(items);save();load();stats();$("amsg").textContent="Generated "+items.length+" questions from your material."}
+function stats(){var by={};bank.forEach(function(b){by[b.subject]=(by[b.subject]||0)+1});
+ $("stats").innerHTML=Object.keys(by).map(function(k){return esc(k)+": <b>"+by[k]+"</b>"}).join("<br>")+"<br>Uploaded by you: <b>"+custom.length+"</b>"}
+function resetBank(){if(confirm("Remove all uploaded questions from this device?")){custom=[];save();load();stats();$("amsg").textContent=""}}
+function sample(){var c='subject,level,topic,question,A,B,C,D,answer,explanation\nMathematics,P5,Decimals,"What is 0.5 + 0.25?",0.75,0.7,0.3,1.25,A,"0.50 + 0.25 = 0.75"\n';
+ var a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(c);a.download="sample-questions.csv";a.click()}
+
+fill("level",LEVELS);fill("subject",SUBJECTS);fill("msub",SUBJECTS);fill("mlvl",["ALL"].concat(LEVELS));
+$("level").value="P5";$("level").onchange=$("subject").onchange=avail;load();avail();
+</script>
+</body>
+</html>
